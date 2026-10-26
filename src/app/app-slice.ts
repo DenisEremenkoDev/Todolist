@@ -1,7 +1,15 @@
 import type { RequestStatus } from "@/common/types"
 import { tasksApi } from "@/features/todolists/api/tasksApi"
-import { createSlice, isFulfilled, isPending, isRejected } from "@reduxjs/toolkit"
+import { createSlice, isAnyOf, isFulfilled, isPending, isRejected } from "@reduxjs/toolkit"
 import { todolistsApi } from "@/features/todolists/api/todolistsApi.ts"
+
+const isSilentPending = isAnyOf(
+  todolistsApi.endpoints.getTodolists.matchPending,
+  todolistsApi.endpoints.removeTodolist.matchPending,
+  tasksApi.endpoints.getTasks.matchPending,
+  tasksApi.endpoints.removeTask.matchPending,
+  tasksApi.endpoints.updateTask.matchPending,
+)
 
 export const appSlice = createSlice({
   name: "app",
@@ -20,12 +28,8 @@ export const appSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addMatcher(isPending, (state, action) => {
-        if (
-          todolistsApi.endpoints.getTodolists.matchPending(action) ||
-          tasksApi.endpoints.getTasks.matchPending(action)
-        ) {
-          return
-        }
+        if (isSilentPending(action)) return
+
         state.status = "loading"
       })
       .addMatcher(isFulfilled, (state) => {

@@ -6,6 +6,7 @@ import { TaskItem } from "./TaskItem/TaskItem"
 import { TasksSkeleton } from "./TasksSkeleton/TasksSkeleton"
 import { useState } from "react"
 import { TasksPagination } from "@/features/todolists/ui/Todolists/TodolistItem/Tasks/TasksPagination/TasksPagination.tsx"
+import { TASK_COUNT } from "@/common/constants"
 
 type Props = {
   todolist: DomainTodolist
@@ -29,9 +30,10 @@ export const Tasks = ({ todolist }: Props) => {
     filteredTasks = filteredTasks?.filter((task) => task.status === TaskStatus.Completed)
   }
 
-  if (isLoading ) {
+  if (isLoading) {
     return <TasksSkeleton />
   }
+  const totalCount = data?.totalCount || 0
 
   return (
     <>
@@ -44,7 +46,7 @@ export const Tasks = ({ todolist }: Props) => {
               <TaskItem key={task.id} task={task} todolist={todolist} />
             ))}
           </List>
-          <TasksPagination totalCount={data?.totalCount || 0} page={page} setPage={setPage} />
+          {totalCount > TASK_COUNT && <TasksPagination totalCount={totalCount} page={page} setPage={setPage} />}
         </>
       )}
     </>
