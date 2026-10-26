@@ -3,7 +3,7 @@ import { AUTH_TOKEN } from "@/common/constants"
 import { ResultCode } from "@/common/enums"
 import { useAppDispatch, useAppSelector } from "@/common/hooks"
 import { getTheme } from "@/common/theme"
-import { useLoginMutation } from "@/features/auth/api/authApi"
+import { useLazyCaptchaQuery, useLoginMutation } from "@/features/auth/api/authApi"
 import { type LoginInputs, loginSchema } from "@/features/auth/lib/schemas"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Button from "@mui/material/Button"
@@ -16,11 +16,15 @@ import Grid from "@mui/material/Grid"
 import TextField from "@mui/material/TextField"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
 import styles from "./Login.module.css"
+import { useState } from "react"
 
 export const Login = () => {
   const themeMode = useAppSelector(selectThemeMode)
 
   const [login] = useLoginMutation()
+  const [getCaptcha, { data: captchaData }] = useLazyCaptchaQuery()
+
+  const [showCaptcha, setShowCaptcha] = useState(false)
 
   const dispatch = useAppDispatch()
 
@@ -31,10 +35,11 @@ export const Login = () => {
     handleSubmit,
     reset,
     control,
+    resetField,
     formState: { errors },
   } = useForm<LoginInputs>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", rememberMe: false },
+    defaultValues: { email: "", password: "", rememberMe: false,captcha: '' },
   })
 
   const onSubmit: SubmitHandler<LoginInputs> = (data) => {
@@ -42,7 +47,12 @@ export const Login = () => {
       if (res.data?.resultCode === ResultCode.Success) {
         dispatch(setIsLoggedInAC({ isLoggedIn: true }))
         localStorage.setItem(AUTH_TOKEN, res.data.data.token)
+        setShowCaptcha(false)
         reset()
+      } else if (res.data?.resultCode === ResultCode.CaptchaError) {
+        resetField('captcha')
+        setShowCaptcha(true)
+        getCaptcha()
       }
     })
   }
@@ -78,7 +88,7 @@ export const Login = () => {
               type="password"
               label="Password"
               margin="normal"
-              error={!!errors.email}
+              error={!!errors.password}
               {...register("password")}
             />
             {errors.password && <span className={styles.errorMessage}>{errors.password.message}</span>}
@@ -92,6 +102,12 @@ export const Login = () => {
                 />
               }
             />
+            {showCaptcha && (
+              <>
+                <img src={captchaData?.url} alt={"captcha"} />
+                <TextField label="captcha" {...register("captcha")} />
+              </>
+            )}
             <Button type="submit" variant="contained" color="primary">
               Login
             </Button>
