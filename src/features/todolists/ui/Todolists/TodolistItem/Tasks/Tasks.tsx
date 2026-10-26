@@ -17,7 +17,7 @@ export const Tasks = ({ todolist }: Props) => {
   const { id, filter } = todolist
   const [page, setPage] = useState(1)
 
-  const { data, isLoading, isFetching } = useGetTasksQuery({ id, params: { page } }, { refetchOnReconnect: true })
+  const { data, isLoading } = useGetTasksQuery({ id, params: { page } }, { refetchOnReconnect: true })
   //refetchOnReconnect  востановление после дисконекта
   //синхрон тасок во вкладках локально,гибко **refetchOnFocus:true**
 
@@ -29,7 +29,7 @@ export const Tasks = ({ todolist }: Props) => {
     filteredTasks = filteredTasks?.filter((task) => task.status === TaskStatus.Completed)
   }
 
-  if (isLoading || isFetching) {
+  if (isLoading ) {
     return <TasksSkeleton />
   }
 

@@ -36,17 +36,40 @@ export const tasksApi = baseApi.injectEndpoints({
           body: model,
         }),
         invalidatesTags: (_result, _error, { todolistId }) => [{ type: "Task", id: todolistId }],
+
+        onQueryStarted: async ({ taskId, model, todolistId }, { dispatch, getState, queryFulfilled }) => {
+          const args = tasksApi.util.selectCachedArgsForQuery(getState(), "getTasks")
+          let patchResults: any[] = []
+          args.forEach((arg) => {
+            patchResults.push(
+              dispatch(
+                tasksApi.util.updateQueryData(
+                  "getTasks",
+                  { id: todolistId, params: { page: arg.params.page } },
+                  (res) => {
+                    const index = res.items.findIndex((task) => task.id === taskId)
+                    if (index !== -1) {
+                      res.items[index] = { ...res.items[index], ...model }
+                    }
+                  },
+                ),
+              ),
+            )
+          })
+          try {
+            await queryFulfilled
+          } catch (error) {
+            patchResults.forEach((patchResult) => {
+              patchResult.undo()
+            })
+          }
+        },
       }),
     }
   },
 })
 
- export const { useGetTasksQuery, useAddTaskMutation, useRemoveTaskMutation, useUpdateTaskMutation } = tasksApi
-
-
-
-
-
+export const { useGetTasksQuery, useAddTaskMutation, useRemoveTaskMutation, useUpdateTaskMutation } = tasksApi
 
 // export const _tasksApi = {
 //   getTasks(todolistId: string) {
